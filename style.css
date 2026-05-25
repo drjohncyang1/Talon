@@ -135,6 +135,11 @@ body {
 }
 .count-btn:active, .count-btn.tap-feedback { opacity: 0.6; transform: scale(0.93); }
 .btn-plus { background: var(--primary); color: #fff; font-weight: 600; }
+.count-btn.btn-plus {
+  width: 92px;
+  border-radius: 24px;
+  font-size: 30px;
+}
 .btn-minus { background: var(--surface2); color: var(--muted); }
 .count-value {
   font-size: 28px;

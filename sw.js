@@ -1,4 +1,4 @@
-const CACHE = 'counter-v7';
+const CACHE = 'counter-v8';
 
 self.addEventListener('install', e => {
   e.waitUntil(
