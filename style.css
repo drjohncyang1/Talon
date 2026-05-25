@@ -237,6 +237,34 @@ body {
   transition: border-color 0.2s;
 }
 .config-input:focus { border-color: var(--primary); }
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.toggle-title {
+  display: block;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+.toggle-subtitle {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 3px;
+}
+.toggle-row input {
+  width: 48px;
+  height: 28px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
 .sync-status { font-size: 13px; color: var(--muted); margin-top: 10px; text-align: center; }
 .version-info { font-size: 12px; color: var(--muted); margin-top: 12px; text-align: center; opacity: 0.75; }
 .section-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; margin: 24px 0 10px; }

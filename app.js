@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '0.9';
+const APP_VERSION = '0.10';
 
 const COLORS = [
   '#14B8A6', // teal
@@ -38,6 +38,32 @@ function bindHaptics() {
   });
 }
 
+// ── Audio feedback ────────────────────────────────────────────
+let audioCtx = null;
+
+function playAudioTick(label) {
+  if (config.audioTick !== true) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!audioCtx) audioCtx = new Ctx();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(label === '+1' ? 1100 : 520, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.035, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  } catch {}
+}
+
 // ── Date ─────────────────────────────────────────────────────
 function todayISO() {
   const d = new Date();
@@ -52,7 +78,7 @@ function isoToDisplay(iso) {
 let counters = load('counters', []);
 let session  = load('session',  { date: todayISO(), counts: {}, timerAcc: 0, timerStart: null });
 let history  = load('history',  {});
-let config   = load('config',   { sheetsUrl: '', tabName: 'Counters', lastSync: null });
+let config   = load('config',   { sheetsUrl: '', tabName: 'Counters', lastSync: null, audioTick: false });
 
 let view       = 'main'; // main | history | config
 let editingId  = null;   // counter id, 'new', or null
@@ -212,6 +238,7 @@ function showCountFeedback(id, label) {
     value.classList.remove('count-bump');
     row.classList.remove('row-counted');
   }, 260);
+  playAudioTick(label);
 }
 
 // ── Sync ──────────────────────────────────────────────────────
@@ -363,6 +390,13 @@ function renderConfig() {
           placeholder="Counters"
           value="${esc(config.tabName)}">
       </div>
+      <label class="toggle-row">
+        <span>
+          <span class="toggle-title">Audio Tick</span>
+          <span class="toggle-subtitle">Short click sound on +/− count changes</span>
+        </span>
+        <input id="cfg-audio" type="checkbox" ${config.audioTick === true ? 'checked' : ''}>
+      </label>
       <button class="btn btn-primary btn-full" id="save-config">Save Settings</button>
       <button class="btn btn-secondary btn-full" id="sync-now">Sync Now</button>
       <div class="sync-status" id="sync-status">${lastSync}</div>
@@ -429,8 +463,14 @@ function bind() {
     document.getElementById('save-config')?.addEventListener('click', () => {
       config.sheetsUrl = document.getElementById('cfg-url').value.trim();
       config.tabName   = document.getElementById('cfg-tab').value.trim() || 'Counters';
+      config.audioTick = document.getElementById('cfg-audio').checked;
       save('config', config);
       setSyncStatus('Settings saved');
+    });
+    document.getElementById('cfg-audio')?.addEventListener('change', e => {
+      config.audioTick = e.target.checked;
+      save('config', config);
+      setSyncStatus(e.target.checked ? 'Audio tick on' : 'Audio tick off');
     });
     document.getElementById('sync-now')?.addEventListener('click', syncNow);
   }
