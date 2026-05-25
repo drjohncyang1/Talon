@@ -87,17 +87,14 @@ function resetTimer() {
 
 function startTick() {
   stopTick();
-  function loop() {
+  tickId = setInterval(() => {
     const el = document.getElementById('timer-display');
     if (el) el.textContent = fmtTimer(timerSecs());
-    checkMidnight();
-    tickId = setTimeout(loop, 500);
-  }
-  loop();
+  }, 500);
 }
 
 function stopTick() {
-  if (tickId) { clearTimeout(tickId); tickId = null; }
+  if (tickId) { clearInterval(tickId); tickId = null; }
 }
 
 // ── Midnight ──────────────────────────────────────────────────
