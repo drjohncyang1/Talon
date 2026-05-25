@@ -1,5 +1,7 @@
 'use strict';
 
+const APP_VERSION = '0.9';
+
 const COLORS = [
   '#14B8A6', // teal
   '#22C55E', // green
@@ -178,13 +180,38 @@ function increment(id) {
   save('session', session);
   const el = document.getElementById('cv-' + id);
   if (el) el.textContent = session.counts[id];
+  showCountFeedback(id, '+1');
 }
 
 function decrement(id) {
+  const before = session.counts[id] || 0;
   session.counts[id] = Math.max(0, (session.counts[id] || 0) - 1);
   save('session', session);
   const el = document.getElementById('cv-' + id);
   if (el) el.textContent = session.counts[id];
+  if (before > 0) showCountFeedback(id, '−1');
+}
+
+function showCountFeedback(id, label) {
+  const value = document.getElementById('cv-' + id);
+  const row = document.querySelector(`[data-row="${id}"]`);
+  if (!value || !row) return;
+
+  value.classList.remove('count-bump');
+  row.classList.remove('row-counted');
+  void value.offsetWidth;
+  value.classList.add('count-bump');
+  row.classList.add('row-counted');
+
+  const badge = document.createElement('span');
+  badge.className = label === '+1' ? 'count-float count-float-plus' : 'count-float count-float-minus';
+  badge.textContent = label;
+  row.appendChild(badge);
+  setTimeout(() => badge.remove(), 650);
+  setTimeout(() => {
+    value.classList.remove('count-bump');
+    row.classList.remove('row-counted');
+  }, 260);
 }
 
 // ── Sync ──────────────────────────────────────────────────────
@@ -255,12 +282,12 @@ function render() {
 function renderMain() {
   const running = !!session.timerStart;
   const rows = counters.map(c => `
-    <div class="counter-row">
+    <div class="counter-row" data-row="${c.id}">
       <div class="counter-dot" style="background:${c.color}"></div>
       <button class="counter-name-btn" data-edit="${c.id}">${esc(c.name)}</button>
       <div class="counter-controls">
         <button class="count-btn btn-minus" data-dec="${c.id}">−</button>
-        <span class="count-value" id="cv-${c.id}">${session.counts[c.id] || 0}</span>
+        <span class="count-value" id="cv-${c.id}" aria-live="polite">${session.counts[c.id] || 0}</span>
         <button class="count-btn btn-plus" data-inc="${c.id}">+</button>
       </div>
     </div>`).join('');
@@ -339,6 +366,7 @@ function renderConfig() {
       <button class="btn btn-primary btn-full" id="save-config">Save Settings</button>
       <button class="btn btn-secondary btn-full" id="sync-now">Sync Now</button>
       <div class="sync-status" id="sync-status">${lastSync}</div>
+      <div class="version-info">Version ${APP_VERSION}</div>
     </div>`;
 }
 
