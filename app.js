@@ -28,7 +28,11 @@ function bindHaptics() {
   document.querySelectorAll('button, .swatch').forEach(el => {
     if (el.dataset.hapticBound === '1') return;
     el.dataset.hapticBound = '1';
-    el.addEventListener('pointerdown', hapticTap, { passive: true });
+    el.addEventListener('pointerdown', () => {
+      hapticTap();
+      el.classList.add('tap-feedback');
+      setTimeout(() => el.classList.remove('tap-feedback'), 140);
+    }, { passive: true });
   });
 }
 

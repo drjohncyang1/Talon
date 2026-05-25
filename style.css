@@ -73,7 +73,7 @@ body {
   transition: opacity 0.1s, transform 0.1s;
   min-width: 100px;
 }
-.btn:active { opacity: 0.7; transform: scale(0.97); }
+.btn:active, .btn.tap-feedback { opacity: 0.7; transform: scale(0.97); }
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-secondary { background: var(--surface); color: var(--text); }
 .btn-danger { background: var(--danger); color: #fff; }
@@ -133,7 +133,7 @@ body {
   transition: opacity 0.1s, transform 0.1s;
   flex-shrink: 0;
 }
-.count-btn:active { opacity: 0.6; transform: scale(0.93); }
+.count-btn:active, .count-btn.tap-feedback { opacity: 0.6; transform: scale(0.93); }
 .btn-plus { background: var(--primary); color: #fff; font-weight: 600; }
 .btn-minus { background: var(--surface2); color: var(--muted); }
 .count-value {
@@ -156,7 +156,7 @@ body {
   margin-top: 6px;
   transition: border-color 0.2s, color 0.2s;
 }
-.add-counter-btn:active { border-color: var(--primary); color: var(--primary); }
+.add-counter-btn:active, .add-counter-btn.tap-feedback { border-color: var(--primary); color: var(--primary); }
 
 /* ── History ── */
 .view { padding: 12px 20px 32px; }
@@ -241,4 +241,5 @@ body {
   transition: transform 0.1s;
 }
 .swatch.active { border-color: #fff; transform: scale(1.15); }
+.swatch.tap-feedback { transform: scale(1.12); }
 .modal-actions { display: flex; gap: 10px; }
