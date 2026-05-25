@@ -211,6 +211,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Render ────────────────────────────────────────────────────
 function render() {
   stopTick();
+  document.getElementById('modal-overlay')?.remove();
   const app = document.getElementById('app');
   if (view === 'main')         app.innerHTML = renderMain();
   else if (view === 'history') app.innerHTML = renderHistory();
