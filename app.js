@@ -72,6 +72,7 @@ function pauseTimer() {
   save('session', session);
   stopTick();
   document.getElementById('timer-toggle').textContent = 'Start';
+  scheduleSync();
 }
 
 function resetTimer() {
