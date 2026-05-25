@@ -15,6 +15,23 @@ function load(key, def) {
 }
 function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
+// ── Haptics ───────────────────────────────────────────────────
+function hapticTap() {
+  // Best-effort web haptics. Works where the Vibration API is exposed;
+  // safely no-ops on iOS Safari/PWA, which does not expose native haptics.
+  try {
+    if (navigator.vibrate) navigator.vibrate(12);
+  } catch {}
+}
+
+function bindHaptics() {
+  document.querySelectorAll('button, .swatch').forEach(el => {
+    if (el.dataset.hapticBound === '1') return;
+    el.dataset.hapticBound = '1';
+    el.addEventListener('pointerdown', hapticTap, { passive: true });
+  });
+}
+
 // ── Date ─────────────────────────────────────────────────────
 function todayISO() {
   const d = new Date();
@@ -227,6 +244,7 @@ function render() {
   }
 
   bind();
+  bindHaptics();
   if (view === 'main' && session.timerStart) startTick();
 }
 
