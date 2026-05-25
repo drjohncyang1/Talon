@@ -36,7 +36,7 @@ let editingId  = null;   // counter id, 'new', or null
 let pickedColor = COLORS[0];
 
 // ── Timer ─────────────────────────────────────────────────────
-let tick = null;
+let tickId = null;
 
 function timerSecs() {
   let s = session.timerAcc || 0;
@@ -87,15 +87,17 @@ function resetTimer() {
 
 function startTick() {
   stopTick();
-  tick = setInterval(() => {
+  function loop() {
     const el = document.getElementById('timer-display');
     if (el) el.textContent = fmtTimer(timerSecs());
     checkMidnight();
-  }, 1000);
+    tickId = setTimeout(loop, 500);
+  }
+  loop();
 }
 
 function stopTick() {
-  if (tick) { clearInterval(tick); tick = null; }
+  if (tickId) { clearTimeout(tickId); tickId = null; }
 }
 
 // ── Midnight ──────────────────────────────────────────────────
