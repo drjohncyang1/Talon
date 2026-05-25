@@ -88,14 +88,21 @@ function resetTimer() {
 
 function startTick() {
   stopTick();
-  tickId = setInterval(() => {
-    const el = document.getElementById('timer-display');
-    if (el) el.textContent = fmtTimer(timerSecs());
-  }, 500);
+  let last = -1;
+  function frame() {
+    const s = timerSecs();
+    if (s !== last) {
+      last = s;
+      const el = document.getElementById('timer-display');
+      if (el) el.textContent = fmtTimer(s);
+    }
+    tickId = requestAnimationFrame(frame);
+  }
+  tickId = requestAnimationFrame(frame);
 }
 
 function stopTick() {
-  if (tickId) { clearInterval(tickId); tickId = null; }
+  if (tickId) { cancelAnimationFrame(tickId); tickId = null; }
 }
 
 // ── Midnight ──────────────────────────────────────────────────
