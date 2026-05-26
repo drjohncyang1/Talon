@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '0.11';
+const APP_VERSION = '0.12';
 
 const COLORS = [
   '#14B8A6', // teal
@@ -40,12 +40,27 @@ function bindHaptics() {
 
 // ── Audio feedback ────────────────────────────────────────────
 let audioCtx = null;
+let audioNeedsReset = false;
+
+function resetAudioContext() {
+  audioNeedsReset = true;
+  if (audioCtx && audioCtx.state !== 'closed') {
+    audioCtx.close().catch(() => {});
+  }
+  audioCtx = null;
+}
 
 async function ensureAudioContext() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) return null;
 
-  if (!audioCtx || audioCtx.state === 'closed') audioCtx = new Ctx();
+  // iOS can return from sleep with an AudioContext that still reports
+  // "running" but no longer produces output. After page sleep/background,
+  // discard it and build a fresh context on the next user-driven tap.
+  if (audioNeedsReset || !audioCtx || audioCtx.state === 'closed') {
+    audioCtx = new Ctx();
+    audioNeedsReset = false;
+  }
 
   if (audioCtx.state === 'suspended') {
     await audioCtx.resume();
@@ -73,6 +88,13 @@ async function playAudioTick(label) {
     osc.stop(now + 0.05);
   } catch {}
 }
+
+window.addEventListener('pagehide', resetAudioContext);
+window.addEventListener('pageshow', () => { audioNeedsReset = true; });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') resetAudioContext();
+  if (document.visibilityState === 'visible') audioNeedsReset = true;
+});
 
 // ── Date ─────────────────────────────────────────────────────
 function todayISO() {
