@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '0.15';
+const APP_VERSION = '0.16';
 
 const COLORS = [
   '#14B8A6', // teal
@@ -332,13 +332,48 @@ function setSyncStatus(msg) {
 
 // ── Wake lock ─────────────────────────────────────────────────
 let wakeLock = null;
+let wakeLockWanted = false;
+
 async function grabWakeLock() {
   try {
-    if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+    if (!wakeLockWanted || document.visibilityState !== 'visible') return;
+    if (!('wakeLock' in navigator) || wakeLock) return;
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => {
+      wakeLock = null;
+      if (wakeLockWanted && document.visibilityState === 'visible') {
+        setTimeout(grabWakeLock, 250);
+      }
+    });
   } catch {}
 }
+
+async function releaseWakeLock() {
+  wakeLockWanted = false;
+  if (!wakeLock) return;
+  const lock = wakeLock;
+  wakeLock = null;
+  try { await lock.release(); } catch {}
+}
+
+function updateWakeLockForView() {
+  if (view === 'main') {
+    wakeLockWanted = true;
+    grabWakeLock();
+  } else {
+    releaseWakeLock();
+  }
+}
+
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') grabWakeLock();
+  if (document.visibilityState === 'visible') updateWakeLockForView();
+  else wakeLock = null;
+});
+
+document.addEventListener('pointerdown', () => {
+  // Some mobile browsers are more willing to grant/restore wake lock
+  // immediately after a user gesture. Keep the main counter screen awake.
+  if (view === 'main') updateWakeLockForView();
 });
 
 // ── Render ────────────────────────────────────────────────────
@@ -356,6 +391,7 @@ function render() {
 
   bind();
   bindHaptics();
+  updateWakeLockForView();
   if (view === 'main' && session.timerStart) startTick();
 }
 
@@ -580,7 +616,6 @@ function closeModal() { editingId = null; render(); }
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
   checkMidnight();
-  await grabWakeLock();
   render();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
