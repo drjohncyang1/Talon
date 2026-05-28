@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '0.13';
+const APP_VERSION = '0.14';
 
 const COLORS = [
   '#14B8A6', // teal
@@ -9,6 +9,15 @@ const COLORS = [
   '#6366F1', // indigo
   '#F59E0B', // amber
   '#F43F5E', // rose
+];
+
+const SOUND_OPTIONS = [
+  { id: 'classic', name: 'Classic', plus: 1100, minus: 520, type: 'square' },
+  { id: 'bright',  name: 'Bright',  plus: 1320, minus: 620, type: 'square' },
+  { id: 'soft',    name: 'Soft',    plus: 880,  minus: 440, type: 'sine' },
+  { id: 'pop',     name: 'Pop',     plus: 1240, minus: 580, type: 'triangle' },
+  { id: 'low',     name: 'Low',     plus: 740,  minus: 360, type: 'square' },
+  { id: 'chime',   name: 'Chime',   plus: 1560, minus: 760, type: 'sine' },
 ];
 
 // ── Storage ──────────────────────────────────────────────────
@@ -69,17 +78,19 @@ async function ensureAudioContext() {
   return audioCtx.state === 'running' ? audioCtx : null;
 }
 
-async function playAudioTick(label) {
+async function playAudioTick(id, action) {
   if (config.audioTick !== true) return;
   try {
     const ctx = await ensureAudioContext();
     if (!ctx) return;
 
+    const profile = getSoundProfile(id);
+    const isPlus = action === '+1';
     const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(label === '+1' ? 1100 : 520, now);
+    osc.type = profile.type;
+    osc.frequency.setValueAtTime(isPlus ? profile.plus : profile.minus, now);
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(0.035, now + 0.006);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
@@ -88,6 +99,13 @@ async function playAudioTick(label) {
     osc.start(now);
     osc.stop(now + 0.05);
   } catch {}
+}
+
+function getSoundProfile(id) {
+  const counter = counters.find(c => c.id === id);
+  const fallbackIndex = Math.max(0, counters.findIndex(c => c.id === id));
+  const soundId = counter?.sound || SOUND_OPTIONS[fallbackIndex % SOUND_OPTIONS.length].id;
+  return SOUND_OPTIONS.find(s => s.id === soundId) || SOUND_OPTIONS[0];
 }
 
 window.addEventListener('pagehide', resetAudioContext);
@@ -117,6 +135,7 @@ if (typeof config.audioTick !== 'boolean') config.audioTick = true;
 let view       = 'main'; // main | history | config
 let editingId  = null;   // counter id, 'new', or null
 let pickedColor = COLORS[0];
+let pickedSound = SOUND_OPTIONS[0].id;
 
 // ── Timer ─────────────────────────────────────────────────────
 let tickId = null;
@@ -216,15 +235,15 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
 
 function addCounter(name, color) {
   const id = uid();
-  counters.push({ id, name, color });
+  counters.push({ id, name, color, sound: pickedSound });
   if (!(id in session.counts)) session.counts[id] = 0;
   save('counters', counters);
   save('session', session);
 }
 
-function updateCounter(id, name, color) {
+function updateCounter(id, name, color, sound) {
   const c = counters.find(c => c.id === id);
-  if (c) { c.name = name; c.color = color; }
+  if (c) { c.name = name; c.color = color; c.sound = sound; }
   save('counters', counters);
 }
 
@@ -272,7 +291,7 @@ function showCountFeedback(id, label) {
     value.classList.remove('count-bump');
     row.classList.remove('row-counted');
   }, 260);
-  playAudioTick(label);
+  playAudioTick(id, label);
 }
 
 // ── Sync ──────────────────────────────────────────────────────
@@ -440,13 +459,17 @@ function renderConfig() {
 
 function renderModal() {
   const isNew = editingId === 'new';
-  const c = isNew ? { name: '', color: pickedColor } : counters.find(x => x.id === editingId);
+  const c = isNew ? { name: '', color: pickedColor, sound: pickedSound } : counters.find(x => x.id === editingId);
   if (!c) return '';
   pickedColor = c.color || COLORS[0];
+  pickedSound = c.sound || getSoundProfile(c.id).id;
 
   const swatches = COLORS.map(col => `
     <div class="swatch ${pickedColor === col ? 'active' : ''}"
          style="background:${col}" data-color="${col}"></div>`).join('');
+
+  const sounds = SOUND_OPTIONS.map(s => `
+    <option value="${s.id}" ${pickedSound === s.id ? 'selected' : ''}>${s.name}</option>`).join('');
 
   return `
     <div class="modal-overlay" id="modal-overlay">
@@ -455,6 +478,8 @@ function renderModal() {
         <input class="modal-input" id="modal-name" type="text"
           placeholder="Counter name" value="${esc(c.name)}" autocomplete="off">
         <div class="color-row" id="color-row">${swatches}</div>
+        <label class="modal-label" for="modal-sound">Sound</label>
+        <select class="modal-select" id="modal-sound">${sounds}</select>
         <div class="modal-actions">
           ${!isNew ? `<button class="btn btn-danger btn-sm" id="modal-del">Delete</button>` : ''}
           <button class="btn btn-secondary" id="modal-cancel" style="flex:1">Cancel</button>
@@ -489,6 +514,8 @@ function bind() {
     document.querySelectorAll('[data-edit]').forEach(b =>
       b.addEventListener('click', () => { editingId = b.dataset.edit; render(); }));
     document.getElementById('add-counter')?.addEventListener('click', () => {
+      pickedColor = COLORS[counters.length % COLORS.length];
+      pickedSound = SOUND_OPTIONS[counters.length % SOUND_OPTIONS.length].id;
       editingId = 'new'; render();
     });
   }
@@ -528,8 +555,9 @@ function bind() {
     document.getElementById('modal-save')?.addEventListener('click', () => {
       const name = document.getElementById('modal-name').value.trim();
       if (!name) { alert('Enter a name'); return; }
+      pickedSound = document.getElementById('modal-sound').value;
       if (editingId === 'new') addCounter(name, pickedColor);
-      else updateCounter(editingId, name, pickedColor);
+      else updateCounter(editingId, name, pickedColor, pickedSound);
       closeModal();
     });
 
