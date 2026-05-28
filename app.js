@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '0.14';
+const APP_VERSION = '0.15';
 
 const COLORS = [
   '#14B8A6', // teal
@@ -399,7 +399,12 @@ function renderHistory() {
   const rows = entries.length === 0
     ? '<p class="history-empty">No history yet</p>'
     : entries.map(([date, rec]) => {
-        const chips = Object.entries(rec.counts).map(([id, n]) => {
+        const orderedIds = [
+          ...counters.map(c => c.id).filter(id => id in rec.counts),
+          ...Object.keys(rec.counts).filter(id => !counters.some(c => c.id === id)),
+        ];
+        const chips = orderedIds.map(id => {
+          const n = rec.counts[id];
           const name = rec.counterNames?.[id] || id;
           return `<span class="history-chip">${esc(name)}: ${n}</span>`;
         }).join('');
