@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '0.16';
+const APP_VERSION = '0.17';
 
 const COLORS = [
   '#14B8A6', // teal
@@ -330,6 +330,17 @@ function setSyncStatus(msg) {
   if (el) el.textContent = msg;
 }
 
+function saveConfigFromInputs() {
+  const url = document.getElementById('cfg-url');
+  const tab = document.getElementById('cfg-tab');
+  const audio = document.getElementById('cfg-audio');
+
+  if (url) config.sheetsUrl = url.value.trim();
+  if (tab) config.tabName = tab.value.trim() || 'Counters';
+  if (audio) config.audioTick = audio.checked;
+  save('config', config);
+}
+
 // ── Wake lock ─────────────────────────────────────────────────
 let wakeLock = null;
 let wakeLockWanted = false;
@@ -563,10 +574,7 @@ function bind() {
 
   if (view === 'config') {
     document.getElementById('save-config')?.addEventListener('click', () => {
-      config.sheetsUrl = document.getElementById('cfg-url').value.trim();
-      config.tabName   = document.getElementById('cfg-tab').value.trim() || 'Counters';
-      config.audioTick = document.getElementById('cfg-audio').checked;
-      save('config', config);
+      saveConfigFromInputs();
       setSyncStatus('Settings saved');
     });
     document.getElementById('cfg-audio')?.addEventListener('change', e => {
@@ -575,7 +583,10 @@ function bind() {
       if (!e.target.checked) resetAudioContext();
       setSyncStatus(e.target.checked ? 'Audio tick on' : 'Audio tick off');
     });
-    document.getElementById('sync-now')?.addEventListener('click', syncNow);
+    document.getElementById('sync-now')?.addEventListener('click', () => {
+      saveConfigFromInputs();
+      syncNow();
+    });
   }
 
   // Modal
