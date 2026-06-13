@@ -1,6 +1,6 @@
 'use strict';
 
-const APP_VERSION = '0.17';
+const APP_VERSION = '0.18';
 
 const COLORS = [
   '#14B8A6', // teal
